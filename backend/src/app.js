@@ -1,7 +1,16 @@
+
 import express from "express";
 import cors from "cors";
 
 import healthRoutes from "./routes/health.routes.js";
+import itemRoutes from "./routes/item.routes.js";
+import matchRoutes from "./routes/match.routes.js";
+import claimRoutes from "./routes/claim.routes.js";
+import rewardRoutes from "./routes/reward.routes.js";
+import searchRoutes from "./routes/search.routes.js";
+import leaderboardRoutes from "./routes/leaderboard.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+
 import {
     notFoundHandler,
     errorHandler
@@ -9,29 +18,15 @@ import {
 
 const app = express();
 
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    process.env.ADMIN_URL
-].filter(Boolean);
-
-app.use(
-    cors({
-        origin(origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-
-            return callback(new Error("Origin not allowed by CORS"));
-        }
-    })
-);
+app.use(cors({
+    origin: [
+        process.env.FRONTEND_URL || "http://localhost:5173",
+        process.env.ADMIN_URL || "http://localhost:5174"
+    ],
+    credentials: true
+}));
 
 app.use(express.json({ limit: "1mb" }));
-
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.originalUrl}`);
-    next();
-});
 
 app.get("/", (req, res) => {
     res.json({
@@ -43,6 +38,13 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/health", healthRoutes);
+app.use("/api/v1/items", itemRoutes);
+app.use("/api/v1/matches", matchRoutes);
+app.use("/api/v1/claims", claimRoutes);
+app.use("/api/v1/rewards", rewardRoutes);
+app.use("/api/v1/search", searchRoutes);
+app.use("/api/v1/leaderboard", leaderboardRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

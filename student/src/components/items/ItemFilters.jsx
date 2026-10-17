@@ -2,63 +2,65 @@ import { Search, SlidersHorizontal } from "lucide-react";
 
 export const ITEM_CATEGORIES = [
     "Electronics",
+    "ID Cards",
     "Books & Notes",
-    "Keys & ID Cards",
-    "Accessories",
-    "Wallets",
-    "Clothing",
     "Bags",
+    "Clothing",
+    "Keys",
+    "Wallets",
+    "Water Bottles",
+    "Accessories",
     "Other",
 ];
 
 export default function ItemFilters({
-    search,
-    onSearchChange,
-    category,
-    onCategoryChange,
-    type,
-    onTypeChange,
+    searchTerm = "",
+    setSearchTerm = () => { },
+    category = "All",
+    setCategory = () => { },
+    type = "all",
+    setType = () => { },
 }) {
     return (
-        <div className="item-filters">
+        <section className="item-filters">
             <div className="filter-search">
                 <Search size={18} />
                 <input
                     type="search"
-                    value={search}
-                    onChange={(event) => onSearchChange(event.target.value)}
-                    placeholder="Search by item, description or location..."
-                    aria-label="Search reports"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search by item, description, or location..."
+                    aria-label="Search items"
                 />
             </div>
 
             <div className="filter-control">
                 <SlidersHorizontal size={17} />
                 <select
-                    value={category}
-                    onChange={(event) => onCategoryChange(event.target.value)}
-                    aria-label="Filter by category"
+                    value={type}
+                    onChange={(event) => setType(event.target.value)}
+                    aria-label="Filter by report type"
                 >
-                    <option value="all">All categories</option>
-                    {ITEM_CATEGORIES.map((name) => (
-                        <option value={name} key={name}>
-                            {name}
-                        </option>
-                    ))}
+                    <option value="all">All reports</option>
+                    <option value="lost">Lost items</option>
+                    <option value="found">Found items</option>
                 </select>
             </div>
 
             <div className="filter-control">
                 <select
-                    value={type}
-                    onChange={(event) => onTypeChange(event.target.value)}
-                    aria-label="Filter by report type"
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value)}
+                    aria-label="Filter by category"
                 >
-                    <option value="all">Lost & found</option>
-                    <option value="lost">Lost items</option>
-                    <option value="found">Found items</option>
+                    <option value="All">All categories</option>
+                    {ITEM_CATEGORIES.map((itemCategory) => (
+                        <option key={itemCategory} value={itemCategory}>
+                            {itemCategory}
+                        </option>
+                    ))}
                 </select>
             </div>
-        </div>
+        </section>
     );
 }

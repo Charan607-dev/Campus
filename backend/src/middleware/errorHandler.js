@@ -1,13 +1,13 @@
+
 export function notFoundHandler(req, res) {
     res.status(404).json({
         success: false,
-        message: "Endpoint not found",
-        path: req.originalUrl
+        message: `Route not found: ${req.method} ${req.originalUrl}`
     });
 }
 
 export function errorHandler(err, req, res, next) {
-    console.error(err.stack || err);
+    console.error(err);
 
     if (res.headersSent) {
         return next(err);
@@ -16,8 +16,8 @@ export function errorHandler(err, req, res, next) {
     res.status(err.status || 500).json({
         success: false,
         message:
-            err.status && err.status < 500
-                ? err.message
-                : "Internal server error"
+            process.env.NODE_ENV === "production"
+                ? "Internal server error"
+                : err.message || "Internal server error"
     });
 }

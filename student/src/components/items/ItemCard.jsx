@@ -1,74 +1,65 @@
-import {
-    MapPin,
-    CalendarDays,
-    Tag,
-    PackageCheck,
-} from "lucide-react";
+import { MapPin, CalendarDays, Image as ImageIcon } from "lucide-react";
 
-export default function ItemCard({ item, onView }) {
+export default function ItemCard({ item, onClick }) {
+    if (!item) return null;
+
     const isLost = item.type === "lost";
 
-    const dateLabel = item.date
-        ? new Date(`${item.date}T00:00:00`).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        })
-        : "Date not provided";
-
     return (
-        <article className="item-card">
-            <div className="item-card-top">
-                <span className={`item-type-badge ${isLost ? "lost" : "found"}`}>
-                    {isLost ? "Lost item" : "Found item"}
-                </span>
-                <span className="item-category">
-                    <Tag size={13} /> {item.category || "Other"}
-                </span>
-            </div>
-
+        <article
+            className="item-card"
+            onClick={() => onClick?.(item)}
+            onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onClick?.(item);
+                }
+            }}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+        >
             {item.imageUrl ? (
                 <img
                     className="item-card-image"
                     src={item.imageUrl}
                     alt={item.title || "Reported item"}
+                    loading="lazy"
                 />
             ) : (
-                <div className="item-card-placeholder">
-                    <PackageCheck size={38} />
-                    <span>No image provided</span>
+                <div className="item-card-image item-card-placeholder">
+                    <ImageIcon size={32} />
+                    <span>No image available</span>
                 </div>
             )}
 
             <div className="item-card-body">
-                <h3>{item.title}</h3>
+                <div className="item-card-top">
+                    <span className={`item-type-badge ${isLost ? "lost" : "found"}`}>
+                        {isLost ? "Lost" : "Found"}
+                    </span>
+                    <span className="item-category">{item.category || "Other"}</span>
+                </div>
+
+                <h3>{item.title || "Untitled item"}</h3>
+
                 <p className="item-description">
-                    {item.description || "No additional description."}
+                    {item.description || "No description provided."}
                 </p>
 
                 <div className="item-meta">
                     <span>
-                        <MapPin size={14} />
-                        {item.location || "Location not specified"}
+                        <MapPin size={15} />
+                        {item.location || "Location unknown"}
                     </span>
+
                     <span>
-                        <CalendarDays size={14} />
-                        {dateLabel}
+                        <CalendarDays size={15} />
+                        {item.date || "Date unknown"}
                     </span>
                 </div>
 
-                {item.contact && (
-                    <p className="item-contact">Contact: {item.contact}</p>
-                )}
-
-                {onView && (
-                    <button
-                        className="button button-ghost button-full item-view-button"
-                        type="button"
-                        onClick={() => onView(item)}
-                    >
-                        View details
-                    </button>
+                {item.status === "resolved" && (
+                    <span className="item-resolved-label">Resolved</span>
                 )}
             </div>
         </article>
