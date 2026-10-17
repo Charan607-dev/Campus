@@ -1,5 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { logoutAdmin } from "../services/auth";
+import { NavLink, Outlet } from "react-router-dom";
 import {
     LayoutDashboard,
     PackageSearch,
@@ -8,7 +7,6 @@ import {
     BadgeCheck,
     Users,
     MapPinned,
-    LogOut,
     Menu,
     X,
     Bell,
@@ -28,12 +26,6 @@ const navigation = [
 
 export default function AdminLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        logoutAdmin();
-        navigate("/login", { replace: true });
-    };
 
     return (
         <div className="admin-shell">
@@ -88,10 +80,6 @@ export default function AdminLayout() {
                             <small>CampusFind Admin</small>
                         </div>
                     </div>
-
-                    <button className="admin-logout" onClick={handleLogout}>
-                        <LogOut size={17} /> Sign out
-                    </button>
                 </div>
             </aside>
 

@@ -1,10 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import StudentLayout from "./layouts/StudentLayout";
-import ProtectedRoute from "./routes/ProtectedRoute";
 
 import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import ReportLost from "./pages/ReportLost";
 import ReportFound from "./pages/ReportFound";
 import SearchResults from "./pages/SearchResults";
@@ -19,20 +16,14 @@ export default function App() {
         <Routes>
             <Route element={<StudentLayout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/search" element={<SearchResults />} />
+                <Route path="/report-lost" element={<ReportLost />} />
+                <Route path="/report-found" element={<ReportFound />} />
+                <Route path="/my-reports" element={<MyReports />} />
+                <Route path="/matches" element={<Matches />} />
+                <Route path="/claims" element={<Claims />} />
+                <Route path="/rewards" element={<Rewards />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
-
-                {/* Authenticated user routes */}
-                <Route element={<ProtectedRoute />}>
-                    <Route path="/report-lost" element={<ReportLost />} />
-                    <Route path="/report-found" element={<ReportFound />} />
-                    <Route path="/my-reports" element={<MyReports />} />
-                    <Route path="/matches" element={<Matches />} />
-                    <Route path="/claims" element={<Claims />} />
-                    <Route path="/rewards" element={<Rewards />} />
-                </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
