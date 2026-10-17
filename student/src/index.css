@@ -1,0 +1,288 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+    font-family: "DM Sans", sans-serif;
+    color: #18231e;
+    background: #f7f8f5;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-optical-sizing: auto;
+    font-weight: 400;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.app {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 7%;
+}
+
+.navbar {
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e5e9e2;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1c3025;
+    text-decoration: none;
+    font-family: "Manrope", sans-serif;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+}
+
+.brand-icon {
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    color: white;
+    background: #276749;
+    border-radius: 12px;
+}
+
+.nav-label {
+    color: #79847a;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.7px;
+}
+
+.login-button,
+.secondary-button {
+    border: 1px solid #dce3da;
+    background: transparent;
+    color: #24392b;
+    border-radius: 9px;
+    padding: 11px 19px;
+    font-weight: 600;
+}
+
+.hero {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 96px 0 75px;
+    text-align: center;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #276749;
+    background: #eaf2e9;
+    border: 1px solid #dce9da;
+    border-radius: 100px;
+    padding: 9px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+h1 {
+    margin: 27px 0 20px;
+    font-family: "Manrope", sans-serif;
+    font-size: clamp(42px, 6.2vw, 74px);
+    line-height: 1.12;
+    letter-spacing: -4px;
+    font-weight: 800;
+}
+
+h1 span {
+    color: #39835c;
+}
+
+.hero-description {
+    max-width: 590px;
+    margin: 0 auto;
+    color: #69746b;
+    font-size: 16px;
+    line-height: 1.9;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.primary-button {
+    border: 1px solid #276749;
+    background: #276749;
+    color: white;
+    border-radius: 9px;
+    padding: 14px 20px;
+    font-weight: 600;
+}
+
+.primary-button:hover {
+    background: #1e543a;
+}
+
+.secondary-button:hover,
+.login-button:hover {
+    background: #eef2ec;
+}
+
+.search-panel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 620px;
+    margin: 35px auto 0;
+    padding: 9px 10px 9px 17px;
+    background: white;
+    border: 1px solid #e1e6de;
+    border-radius: 13px;
+    box-shadow: 0 10px 35px rgb(29 53 37 / 5%);
+    color: #758078;
+    text-align: left;
+}
+
+.search-panel input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: #24392b;
+}
+
+.search-panel input::placeholder {
+    color: #929a93;
+}
+
+.search-panel button {
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 19px;
+    background: #276749;
+    color: white;
+    font-weight: 600;
+}
+
+.location-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 20px;
+    color: #828b82;
+    font-size: 13px;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    padding-bottom: 65px;
+}
+
+.feature-card {
+    padding: 25px;
+    background: white;
+    border: 1px solid #e6eae3;
+    border-radius: 15px;
+}
+
+.feature-number {
+    color: #39835c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.feature-card h2 {
+    margin: 18px 0 10px;
+    font-family: "Manrope", sans-serif;
+    font-size: 19px;
+    letter-spacing: -0.5px;
+}
+
+.feature-card p {
+    margin: 0;
+    color: #748076;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+footer {
+    padding: 25px 0;
+    border-top: 1px solid #e5e9e2;
+    color: #828b82;
+    font-size: 12px;
+    text-align: center;
+}
+
+@media (max-width: 700px) {
+    .app {
+        padding: 0 5%;
+    }
+
+    .navbar {
+        height: 72px;
+    }
+
+    .nav-label {
+        display: none;
+    }
+
+    .hero {
+        padding: 70px 0 50px;
+    }
+
+    h1 {
+        letter-spacing: -2px;
+    }
+
+    .hero-description {
+        font-size: 14px;
+    }
+
+    .search-panel {
+        gap: 8px;
+        padding-left: 12px;
+    }
+
+    .search-panel input {
+        font-size: 12px;
+    }
+
+    .search-panel button {
+        padding: 11px;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
