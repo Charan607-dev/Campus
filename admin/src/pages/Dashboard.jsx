@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
     PackageSearch,
     SearchCheck,
@@ -6,6 +7,7 @@ import {
     ArrowUpRight,
     Clock3,
     Activity,
+    LoaderCircle,
 } from "lucide-react";
 import {
     ResponsiveContainer,
@@ -16,53 +18,79 @@ import {
     Tooltip,
     CartesianGrid,
 } from "recharts";
-import { demoItems, demoMatches, demoClaims, demoReturns } from "../utils/demoData";
+import api from "../services/api";
 
-const weeklyData = [
-    { day: "Mon", lost: 12, found: 18 },
-    { day: "Tue", lost: 17, found: 21 },
-    { day: "Wed", lost: 10, found: 24 },
-    { day: "Thu", lost: 22, found: 17 },
-    { day: "Fri", lost: 19, found: 27 },
-    { day: "Sat", lost: 8, found: 13 },
-    { day: "Sun", lost: 11, found: 16 },
+const defaultWeeklyData = [
+    { day: "Mon", lost: 4, found: 6 },
+    { day: "Tue", lost: 7, found: 8 },
+    { day: "Wed", lost: 3, found: 9 },
+    { day: "Thu", lost: 8, found: 5 },
+    { day: "Fri", lost: 6, found: 11 },
+    { day: "Sat", lost: 2, found: 4 },
+    { day: "Sun", lost: 3, found: 5 },
 ];
 
 export default function Dashboard() {
+    const [loading, setLoading] = useState(true);
+    const [dashboardData, setDashboardData] = useState({
+        totalReports: 0,
+        pendingMatches: 0,
+        pendingClaims: 0,
+        totalUsers: 0,
+        totalRewards: 0,
+        recentItems: [],
+    });
+
+    useEffect(() => {
+        let mounted = true;
+        api.get("/admin/dashboard")
+            .then((res) => {
+                if (mounted && res?.data) {
+                    setDashboardData(res.data);
+                }
+            })
+            .catch((err) => {
+                console.warn("Could not load backend dashboard statistics:", err.message);
+            })
+            .finally(() => {
+                if (mounted) setLoading(false);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
     const stats = [
         {
             label: "Total reports",
-            value: demoItems.length,
-            note: "Sample records",
+            value: dashboardData.totalReports,
+            note: "Active items",
             icon: PackageSearch,
             color: "blue",
         },
         {
             label: "Pending matches",
-            value: demoMatches.filter((item) => item.status === "pending").length,
+            value: dashboardData.pendingMatches,
             note: "Require review",
             icon: SearchCheck,
             color: "purple",
         },
         {
             label: "Pending claims",
-            value: demoClaims.filter((item) => item.status === "pending").length,
+            value: dashboardData.pendingClaims,
             note: "Awaiting decision",
             icon: ClipboardCheck,
             color: "orange",
         },
         {
-            label: "Verified returns",
-            value: demoReturns.length,
-            note: "Sample records",
+            label: "Registered profiles",
+            value: dashboardData.totalUsers,
+            note: "Campus users",
             icon: BadgeCheck,
             color: "green",
         },
     ];
-
-    const recentItems = [...demoItems]
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 5);
 
     return (
         <div className="admin-page">
@@ -70,9 +98,8 @@ export default function Dashboard() {
                 <div>
                     <span className="admin-eyebrow">OPERATIONS OVERVIEW</span>
                     <h1>Dashboard</h1>
-                    <p>Monitor reports, matching activity, and ownership claims.</p>
+                    <p>Live summary of campus reports, matching activity, and claims.</p>
                 </div>
-                <span className="demo-data-badge">DEMO DATA</span>
             </div>
 
             <section className="admin-stats-grid">
@@ -80,7 +107,9 @@ export default function Dashboard() {
                     <article className="admin-stat-card" key={label}>
                         <div className={`admin-stat-icon ${color}`}><Icon size={21} /></div>
                         <div className="admin-stat-label">{label}</div>
-                        <div className="admin-stat-value">{value}</div>
+                        <div className="admin-stat-value">
+                            {loading ? <LoaderCircle className="loader-spinner" size={20} /> : value}
+                        </div>
                         <div className="admin-stat-note">
                             {note} <ArrowUpRight size={13} />
                         </div>
@@ -93,14 +122,14 @@ export default function Dashboard() {
                     <div className="admin-panel-heading">
                         <div>
                             <h2>Report activity</h2>
-                            <p>Illustrative lost and found reports over seven days.</p>
+                            <p>Illustrative lost and found activity across campus.</p>
                         </div>
                         <Activity size={20} />
                     </div>
 
                     <div className="activity-chart">
                         <ResponsiveContainer width="100%" height={260}>
-                            <AreaChart data={weeklyData}>
+                            <AreaChart data={defaultWeeklyData}>
                                 <defs>
                                     <linearGradient id="lostFill" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="0%" stopColor="#7c8cf8" stopOpacity={0.3} />
@@ -153,18 +182,18 @@ export default function Dashboard() {
                     <div className="attention-list">
                         <div>
                             <span className="attention-icon orange"><PackageSearch size={18} /></span>
-                            <span><strong>Item reports</strong><small>Pending moderation</small></span>
-                            <b>{demoItems.filter((item) => item.status === "pending").length}</b>
+                            <span><strong>Pending claims</strong><small>Require review & verification</small></span>
+                            <b>{dashboardData.pendingClaims}</b>
                         </div>
                         <div>
                             <span className="attention-icon purple"><SearchCheck size={18} /></span>
-                            <span><strong>Match suggestions</strong><small>Pending review</small></span>
-                            <b>{demoMatches.filter((item) => item.status === "pending").length}</b>
+                            <span><strong>Pending matches</strong><small>Heuristic item pairs</small></span>
+                            <b>{dashboardData.pendingMatches}</b>
                         </div>
                         <div>
                             <span className="attention-icon blue"><ClipboardCheck size={18} /></span>
-                            <span><strong>Ownership claims</strong><small>Need a decision</small></span>
-                            <b>{demoClaims.filter((item) => item.status === "pending").length}</b>
+                            <span><strong>Total Campus Items</strong><small>In database</small></span>
+                            <b>{dashboardData.totalReports}</b>
                         </div>
                     </div>
                 </article>
@@ -174,7 +203,7 @@ export default function Dashboard() {
                 <div className="admin-panel-heading">
                     <div>
                         <h2>Recent reports</h2>
-                        <p>Latest items in the sample dataset.</p>
+                        <p>Latest items recorded in the database.</p>
                     </div>
                     <PackageSearch size={20} />
                 </div>
@@ -192,16 +221,24 @@ export default function Dashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {recentItems.map((item) => (
-                                <tr key={item.id}>
-                                    <td><strong>{item.title}</strong><small>{item.category}</small></td>
-                                    <td>{item.id}</td>
-                                    <td><span className={`admin-type ${item.type}`}>{item.type}</span></td>
-                                    <td>{item.location}</td>
-                                    <td>{item.date}</td>
-                                    <td><span className={`admin-status-badge ${item.status}`}>{item.status}</span></td>
+                            {dashboardData.recentItems?.length > 0 ? (
+                                dashboardData.recentItems.map((item) => (
+                                    <tr key={item.id}>
+                                        <td><strong>{item.title}</strong><small>{item.category || "General"}</small></td>
+                                        <td>{item.id?.slice(0, 8)}</td>
+                                        <td><span className={`admin-type ${item.type}`}>{item.type}</span></td>
+                                        <td>{item.location || "On campus"}</td>
+                                        <td>{item.date || new Date(item.created_at).toLocaleDateString()}</td>
+                                        <td><span className={`admin-status-badge ${item.status}`}>{item.status}</span></td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "var(--admin-muted)" }}>
+                                        {loading ? "Loading reports..." : "No items recorded in database yet."}
+                                    </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>

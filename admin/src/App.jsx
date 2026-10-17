@@ -16,14 +16,16 @@ export default function App() {
         <Routes>
             <Route path="/login" element={<Login />} />
 
-            <Route element={<AdminLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/items" element={<ManageItems />} />
-                <Route path="/matches" element={<MatchReview />} />
-                <Route path="/claims" element={<ClaimReview />} />
-                <Route path="/returns" element={<VerifiedReturns />} />
-                <Route path="/users" element={<UserManagement />} />
-                <Route path="/analytics" element={<HeatmapAnalytics />} />
+            <Route element={<RequireAdmin />}>
+                <Route element={<AdminLayout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/items" element={<ManageItems />} />
+                    <Route path="/matches" element={<MatchReview />} />
+                    <Route path="/claims" element={<ClaimReview />} />
+                    <Route path="/returns" element={<VerifiedReturns />} />
+                    <Route path="/users" element={<UserManagement />} />
+                    <Route path="/analytics" element={<HeatmapAnalytics />} />
+                </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

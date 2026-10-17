@@ -1,24 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle2, Upload, LoaderCircle } from "lucide-react";
 import { ITEM_CATEGORIES } from "../components/items/ItemFilters";
-import { saveItem } from "../utils/itemStorage";
+import { useAuth } from "../context/AuthContext";
+import { api } from "../services/api";
+import { saveItem as saveLocalItem } from "../utils/itemStorage";
 
 const initialForm = {
     title: "",
     category: "",
     description: "",
     location: "",
-    date: "",
+    date: new Date().toLocaleDateString("en-CA"),
     contact: "",
     imageUrl: "",
 };
 
 export default function ReportLost() {
     const navigate = useNavigate();
+    const { token, isAuthenticated } = useAuth();
     const [form, setForm] = useState(initialForm);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     function updateField(event) {
         setForm((previous) => ({
@@ -27,7 +31,7 @@ export default function ReportLost() {
         }));
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
         setSuccess(false);
@@ -37,19 +41,44 @@ export default function ReportLost() {
             return;
         }
 
-        saveItem({
-            ...form,
+        const payload = {
             title: form.title.trim(),
             description: form.description.trim(),
+            category: form.category,
             location: form.location.trim(),
+            date: form.date,
             contact: form.contact.trim(),
+            image_url: form.imageUrl.trim() || null,
+            imageUrl: form.imageUrl.trim() || null,
             type: "lost",
-            reportedBy: "Student",
-        });
+            status: "available",
+        };
 
-        setSuccess(true);
-        setForm(initialForm);
-        window.setTimeout(() => navigate("/search"), 900);
+        setSubmitting(true);
+        try {
+            if (token) {
+                await api.createItem(payload, token);
+            }
+            // Always keep local storage in sync as well for resilient client-side experience
+            saveLocalItem({
+                ...payload,
+                reportedBy: "Student",
+            });
+
+            setSuccess(true);
+            setForm(initialForm);
+            window.setTimeout(() => navigate("/search"), 900);
+        } catch (err) {
+            // If backend throws an error, also save locally and alert
+            saveLocalItem({
+                ...payload,
+                reportedBy: "Student",
+            });
+            setError(`Note: Saved locally. Backend notice: ${err.message}`);
+            window.setTimeout(() => navigate("/search"), 1200);
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
@@ -77,6 +106,12 @@ export default function ReportLost() {
                         </p>
                     )}
 
+                    {!isAuthenticated && (
+                        <div className="demo-notice" style={{ marginBottom: "1.2rem" }}>
+                            You are not signed in. Items reported while signed in will be linked to your student profile.
+                        </div>
+                    )}
+
                     <div className="form-group">
                         <label htmlFor="lost-title">Item name *</label>
                         <input
@@ -87,6 +122,7 @@ export default function ReportLost() {
                             placeholder="e.g. Black wireless earbuds"
                             maxLength={100}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -98,6 +134,7 @@ export default function ReportLost() {
                             value={form.category}
                             onChange={updateField}
                             required
+                            disabled={submitting}
                         >
                             <option value="">Select a category</option>
                             {ITEM_CATEGORIES.map((category) => (
@@ -115,6 +152,7 @@ export default function ReportLost() {
                             onChange={updateField}
                             placeholder="Color, brand, distinctive marks, or other useful details..."
                             maxLength={1000}
+                            disabled={submitting}
                         />
                     </div>
 
@@ -128,6 +166,7 @@ export default function ReportLost() {
                             placeholder="e.g. Library, second floor"
                             maxLength={150}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -141,6 +180,7 @@ export default function ReportLost() {
                             value={form.date}
                             onChange={updateField}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -151,13 +191,10 @@ export default function ReportLost() {
                             name="contact"
                             value={form.contact}
                             onChange={updateField}
-                            placeholder="Email or another contact method"
+                            placeholder="Email or phone number"
                             maxLength={150}
+                            disabled={submitting}
                         />
-                        <span className="field-hint">
-                            Demo note: this information is stored in this browser. Avoid
-                            entering sensitive personal details.
-                        </span>
                     </div>
 
                     <div className="form-group">
@@ -168,16 +205,21 @@ export default function ReportLost() {
                             type="url"
                             value={form.imageUrl}
                             onChange={updateField}
-                            placeholder="https://example.com/item-image.jpg"
+                            placeholder="https://images.unsplash.com/..."
+                            disabled={submitting}
                         />
-                        <span className="field-hint">
-                            Enter a publicly accessible image URL. File uploads will be added
-                            later.
-                        </span>
                     </div>
 
-                    <button className="button button-primary button-full" type="submit">
-                        <Upload size={17} /> Submit lost-item report
+                    <button className="button button-primary button-full" type="submit" disabled={submitting}>
+                        {submitting ? (
+                            <>
+                                <LoaderCircle className="loader-spinner" size={17} /> Submitting report...
+                            </>
+                        ) : (
+                            <>
+                                <Upload size={17} /> Submit lost-item report
+                            </>
+                        )}
                     </button>
 
                     <p className="form-bottom">

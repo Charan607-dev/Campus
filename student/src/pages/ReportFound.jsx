@@ -1,24 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, PackageCheck, Upload } from "lucide-react";
+import { CheckCircle2, PackageCheck, Upload, LoaderCircle } from "lucide-react";
 import { ITEM_CATEGORIES } from "../components/items/ItemFilters";
-import { saveItem } from "../utils/itemStorage";
+import { useAuth } from "../context/AuthContext";
+import { api } from "../services/api";
+import { saveItem as saveLocalItem } from "../utils/itemStorage";
 
 const initialForm = {
     title: "",
     category: "",
     description: "",
     location: "",
-    date: "",
+    date: new Date().toLocaleDateString("en-CA"),
     contact: "",
     imageUrl: "",
 };
 
 export default function ReportFound() {
     const navigate = useNavigate();
+    const { token, isAuthenticated } = useAuth();
     const [form, setForm] = useState(initialForm);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     function updateField(event) {
         setForm((previous) => ({
@@ -27,7 +31,7 @@ export default function ReportFound() {
         }));
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
         setSuccess(false);
@@ -37,19 +41,42 @@ export default function ReportFound() {
             return;
         }
 
-        saveItem({
-            ...form,
+        const payload = {
             title: form.title.trim(),
             description: form.description.trim(),
+            category: form.category,
             location: form.location.trim(),
+            date: form.date,
             contact: form.contact.trim(),
+            image_url: form.imageUrl.trim() || null,
+            imageUrl: form.imageUrl.trim() || null,
             type: "found",
-            reportedBy: "Student",
-        });
+            status: "available",
+        };
 
-        setSuccess(true);
-        setForm(initialForm);
-        window.setTimeout(() => navigate("/search"), 900);
+        setSubmitting(true);
+        try {
+            if (token) {
+                await api.createItem(payload, token);
+            }
+            saveLocalItem({
+                ...payload,
+                reportedBy: "Student",
+            });
+
+            setSuccess(true);
+            setForm(initialForm);
+            window.setTimeout(() => navigate("/search"), 900);
+        } catch (err) {
+            saveLocalItem({
+                ...payload,
+                reportedBy: "Student",
+            });
+            setError(`Note: Saved locally. Backend notice: ${err.message}`);
+            window.setTimeout(() => navigate("/search"), 1200);
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
@@ -77,6 +104,12 @@ export default function ReportFound() {
                         </p>
                     )}
 
+                    {!isAuthenticated && (
+                        <div className="demo-notice" style={{ marginBottom: "1.2rem" }}>
+                            You are not signed in. Items reported while signed in will be linked to your student profile.
+                        </div>
+                    )}
+
                     <div className="form-group">
                         <label htmlFor="found-title">Item name *</label>
                         <input
@@ -87,6 +120,7 @@ export default function ReportFound() {
                             placeholder="e.g. Blue student ID card"
                             maxLength={100}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -98,6 +132,7 @@ export default function ReportFound() {
                             value={form.category}
                             onChange={updateField}
                             required
+                            disabled={submitting}
                         >
                             <option value="">Select a category</option>
                             {ITEM_CATEGORIES.map((category) => (
@@ -115,6 +150,7 @@ export default function ReportFound() {
                             onChange={updateField}
                             placeholder="Describe the item without revealing private details that only its owner should know..."
                             maxLength={1000}
+                            disabled={submitting}
                         />
                     </div>
 
@@ -128,6 +164,7 @@ export default function ReportFound() {
                             placeholder="e.g. Cafeteria entrance"
                             maxLength={150}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -141,6 +178,7 @@ export default function ReportFound() {
                             value={form.date}
                             onChange={updateField}
                             required
+                            disabled={submitting}
                         />
                     </div>
 
@@ -151,13 +189,10 @@ export default function ReportFound() {
                             name="contact"
                             value={form.contact}
                             onChange={updateField}
-                            placeholder="Email or another contact method"
+                            placeholder="Email or phone number"
                             maxLength={150}
+                            disabled={submitting}
                         />
-                        <span className="field-hint">
-                            Demo note: contact details are stored in this browser. Avoid
-                            entering sensitive personal details.
-                        </span>
                     </div>
 
                     <div className="form-group">
@@ -168,12 +203,21 @@ export default function ReportFound() {
                             type="url"
                             value={form.imageUrl}
                             onChange={updateField}
-                            placeholder="https://example.com/item-image.jpg"
+                            placeholder="https://images.unsplash.com/..."
+                            disabled={submitting}
                         />
                     </div>
 
-                    <button className="button button-primary button-full" type="submit">
-                        <Upload size={17} /> Submit found-item report
+                    <button className="button button-primary button-full" type="submit" disabled={submitting}>
+                        {submitting ? (
+                            <>
+                                <LoaderCircle className="loader-spinner" size={17} /> Submitting report...
+                            </>
+                        ) : (
+                            <>
+                                <Upload size={17} /> Submit found-item report
+                            </>
+                        )}
                     </button>
 
                     <p className="form-bottom">

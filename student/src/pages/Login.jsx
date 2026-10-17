@@ -1,14 +1,26 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, LockKeyhole, Mail } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { GraduationCap, LockKeyhole, LoaderCircle } from "lucide-react";
+import { loginStudent } from "../services/auth";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    function handleSubmit(event) {
+    const from = location.state?.from?.pathname || "/";
+
+    if (isAuthenticated) {
+        navigate(from, { replace: true });
+    }
+
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
 
@@ -17,9 +29,15 @@ export default function Login() {
             return;
         }
 
-        setError(
-            "Authentication is not connected yet. We'll enable login after backend integration."
-        );
+        setLoading(true);
+        try {
+            await loginStudent({ email: email.trim(), password });
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError(err.message || "Failed to log in. Please check your credentials.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -53,6 +71,7 @@ export default function Login() {
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -66,11 +85,20 @@ export default function Login() {
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
                             required
+                            disabled={loading}
                         />
                     </div>
 
-                    <button className="button button-primary button-full" type="submit">
-                        <LockKeyhole size={16} /> Log in
+                    <button className="button button-primary button-full" type="submit" disabled={loading}>
+                        {loading ? (
+                            <>
+                                <LoaderCircle className="loader-spinner" size={16} /> Signing in...
+                            </>
+                        ) : (
+                            <>
+                                <LockKeyhole size={16} /> Log in
+                            </>
+                        )}
                     </button>
 
                     <p className="form-bottom">

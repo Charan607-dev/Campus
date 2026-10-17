@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
     Search,
     Plus,
@@ -7,12 +7,26 @@ import {
     GraduationCap,
     Trophy,
     Award,
+    LogOut,
+    User,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const { user, profile, isAuthenticated, logout } = useAuth();
+    const navigate = useNavigate();
+
     const closeMenu = () => setMenuOpen(false);
+
+    const handleLogout = async () => {
+        closeMenu();
+        await logout();
+        navigate("/");
+    };
+
+    const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Student";
 
     return (
         <header className="site-header">
@@ -67,13 +81,29 @@ export default function Navbar() {
                     </NavLink>
 
                     <div className="nav-auth">
-                        <Link
-                            to="/login"
-                            className="button button-ghost button-small"
-                            onClick={closeMenu}
-                        >
-                            Log in
-                        </Link>
+                        {isAuthenticated ? (
+                            <>
+                                <span style={{ fontSize: "12px", color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                                    <User size={14} /> {displayName}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    className="button button-ghost button-small"
+                                    title="Sign out"
+                                >
+                                    <LogOut size={15} /> Sign out
+                                </button>
+                            </>
+                        ) : (
+                            <Link
+                                to="/login"
+                                className="button button-ghost button-small"
+                                onClick={closeMenu}
+                            >
+                                Log in
+                            </Link>
+                        )}
 
                         <Link
                             to="/report-lost"

@@ -1,16 +1,24 @@
-
 import { supabase } from "../config/supabase.js";
 
 export async function listClaims(req, res, next) {
     try {
-        const { data, error } = await supabase
+        if (!supabase) throw new Error("Supabase is not configured");
+
+        let query = supabase
             .from("claims")
-            .select("*")
+            .select("*, item:item_id(*)")
             .order("created_at", { ascending: false })
             .limit(200);
 
+        const isAdmin = req.user?.app_metadata?.role === "admin";
+        if (!isAdmin) {
+            query = query.eq("user_id", req.user.id);
+        }
+
+        const { data, error } = await query;
+
         if (error) throw error;
-        res.json({ success: true, data });
+        res.json({ success: true, data: data || [] });
     } catch (error) {
         next(error);
     }
@@ -18,9 +26,19 @@ export async function listClaims(req, res, next) {
 
 export async function createClaim(req, res, next) {
     try {
-        const payload = { ...req.body, user_id: req.user.id };
-        delete payload.id;
-        delete payload.created_at;
+        if (!supabase) throw new Error("Supabase is not configured");
+
+        const { item_id, itemId, foundItemId, lostItemId, reason } = req.body;
+        const targetItemId = item_id || itemId || foundItemId;
+
+        const payload = {
+            item_id: targetItemId || null,
+            found_item_id: foundItemId || targetItemId || null,
+            lost_item_id: lostItemId || null,
+            reason: reason?.trim() || null,
+            status: "pending",
+            user_id: req.user.id,
+        };
 
         const { data, error } = await supabase
             .from("claims")
@@ -37,12 +55,13 @@ export async function createClaim(req, res, next) {
 
 export async function updateClaimStatus(req, res, next) {
     try {
-        const { status } = req.body;
+        if (!supabase) throw new Error("Supabase is not configured");
 
+        const { status } = req.body;
         if (!["pending", "approved", "rejected", "verified"].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid claim status"
+                message: "Invalid claim status. Must be pending, approved, rejected, or verified",
             });
         }
 

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, PackageSearch, ArrowRight, X } from "lucide-react";
+import { Search, PackageSearch, ArrowRight, X, LoaderCircle } from "lucide-react";
 import ItemCard from "../components/items/ItemCard";
 import ItemFilters from "../components/items/ItemFilters";
-import { getItems } from "../utils/itemStorage";
+import { getItems as getLocalItems } from "../utils/itemStorage";
+import { api } from "../services/api";
 
 export default function SearchResults() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState(searchParams.get("q") || "");
     const [category, setCategory] = useState(
         searchParams.get("category") || "all"
@@ -16,8 +18,32 @@ export default function SearchResults() {
     const [type, setType] = useState("all");
     const [selectedItem, setSelectedItem] = useState(null);
 
+    async function fetchItems() {
+        setLoading(true);
+        try {
+            const res = await api.getItems();
+            const remoteItems = res.data || [];
+            const localItems = getLocalItems();
+
+            // Merge items by ID, preferring remote items
+            const map = new Map();
+            localItems.forEach((item) => map.set(item.id, item));
+            remoteItems.forEach((item) => map.set(item.id, {
+                ...item,
+                imageUrl: item.image_url || item.imageUrl,
+            }));
+
+            setItems(Array.from(map.values()));
+        } catch {
+            // Fallback to local storage
+            setItems(getLocalItems());
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
-        setItems(getItems());
+        fetchItems();
     }, []);
 
     useEffect(() => {
@@ -43,17 +69,13 @@ export default function SearchResults() {
                 ].some((value) => String(value || "").toLowerCase().includes(query));
 
             const matchesCategory =
-                category === "all" || item.category === category;
+                category === "all" || item.category?.toLowerCase() === category.toLowerCase();
 
             const matchesType = type === "all" || item.type === type;
 
             return matchesSearch && matchesCategory && matchesType;
         });
     }, [items, search, category, type]);
-
-    function refreshItems() {
-        setItems(getItems());
-    }
 
     return (
         <section className="search-page">
@@ -70,20 +92,19 @@ export default function SearchResults() {
                 </div>
 
                 <ItemFilters
-                    search={search}
-                    onSearchChange={setSearch}
+                    searchTerm={search}
+                    setSearchTerm={setSearch}
                     category={category}
-                    onCategoryChange={setCategory}
+                    setCategory={setCategory}
                     type={type}
-                    onTypeChange={setType}
+                    setType={setType}
                 />
 
                 <div className="results-toolbar">
                     <div>
                         <h2>Recent reports</h2>
                         <p>
-                            {filteredItems.length}{" "}
-                            {filteredItems.length === 1 ? "result" : "results"} found
+                            {loading ? "Loading reports..." : `${filteredItems.length} ${filteredItems.length === 1 ? "result" : "results"} found`}
                         </p>
                     </div>
 
@@ -100,13 +121,18 @@ export default function SearchResults() {
                     </button>
                 </div>
 
-                {filteredItems.length > 0 ? (
+                {loading ? (
+                    <div style={{ textAlign: "center", padding: "60px 0" }}>
+                        <LoaderCircle className="loader-spinner" size={32} />
+                        <p style={{ marginTop: "12px", color: "var(--muted)" }}>Loading campus items...</p>
+                    </div>
+                ) : filteredItems.length > 0 ? (
                     <div className="items-grid">
                         {filteredItems.map((item) => (
                             <ItemCard
                                 key={item.id}
                                 item={item}
-                                onView={setSelectedItem}
+                                onClick={setSelectedItem}
                             />
                         ))}
                     </div>
@@ -164,10 +190,10 @@ export default function SearchResults() {
                         </span>
 
                         <h2 id="item-modal-title">{selectedItem.title}</h2>
-                        {selectedItem.imageUrl && (
+                        {(selectedItem.imageUrl || selectedItem.image_url) && (
                             <img
                                 className="modal-item-image"
-                                src={selectedItem.imageUrl}
+                                src={selectedItem.imageUrl || selectedItem.image_url}
                                 alt={selectedItem.title}
                             />
                         )}
@@ -193,18 +219,10 @@ export default function SearchResults() {
                             </div>
                         </dl>
 
-                        <p className="field-hint">
-                            This is a local demo report. Contact information is not verified.
-                            Confirm ownership carefully before returning an item.
-                        </p>
-
                         <button
                             className="button button-primary button-full"
                             type="button"
-                            onClick={() => {
-                                setSelectedItem(null);
-                                refreshItems();
-                            }}
+                            onClick={() => setSelectedItem(null)}
                         >
                             Close details
                         </button>

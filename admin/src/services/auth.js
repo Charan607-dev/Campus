@@ -1,25 +1,47 @@
-import api from "./api";
+import { supabase } from "./supabase";
 
 const ADMIN_TOKEN_KEY = "campusfind_admin_token";
 const ADMIN_USER_KEY = "campusfind_admin_user";
 
-export async function loginAdmin(credentials) {
-    // Change this endpoint to match your backend's actual login route.
-    const response = await api.post("/auth/login", credentials);
+/**
+ * Sign in admin via Supabase Auth and verify admin privileges
+ */
+export async function loginAdmin({ email, password }) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+    });
 
-    const token = response.token || response.accessToken;
-    const user = response.user || response.admin;
-
-    if (!token) {
-        throw new Error("The login response did not contain an authentication token.");
+    if (error) {
+        throw new Error(error.message);
     }
 
-    if (user?.role && user.role !== "admin") {
-        throw new Error("This account does not have administrator access.");
+    const user = data.user;
+    const token = data.session?.access_token;
+
+    // Check admin role via app_metadata or profiles table
+    let isAdmin = user?.app_metadata?.role === "admin";
+
+    if (!isAdmin) {
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (profile?.role === "admin") {
+            isAdmin = true;
+        }
+    }
+
+    if (!isAdmin) {
+        // Sign out user immediately if they lack admin privileges
+        await supabase.auth.signOut();
+        throw new Error("Access denied. Your account does not have administrator privileges.");
     }
 
     localStorage.setItem(ADMIN_TOKEN_KEY, token);
-    localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user || {}));
+    localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
 
     return { token, user };
 }
@@ -32,12 +54,38 @@ export function getAdminUser() {
     }
 }
 
+export async function checkAdminSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+        logoutAdmin();
+        return false;
+    }
+
+    const user = session.user;
+    if (user.app_metadata?.role === "admin") return true;
+
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+    if (profile?.role === "admin") return true;
+
+    logoutAdmin();
+    return false;
+}
+
 export function isAdminLoggedIn() {
     return Boolean(localStorage.getItem(ADMIN_TOKEN_KEY));
 }
 
-export function logoutAdmin() {
+export async function logoutAdmin() {
+    try {
+        await supabase.auth.signOut();
+    } catch (e) {
+        console.warn("Logout note:", e.message);
+    }
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     localStorage.removeItem(ADMIN_USER_KEY);
-    localStorage.removeItem("campusfind_admin");
 }

@@ -1,29 +1,52 @@
-
 import { supabase } from "../config/supabase.js";
 
-async function countRows(table, query = (q) => q) {
-    if (!supabase) throw new Error("Supabase is not configured");
-
-    const { count, error } = await query(
-        supabase.from(table).select("*", { count: "exact", head: true })
-    );
-
-    if (error) throw error;
-    return count || 0;
+async function countRows(table, filterFn = (q) => q) {
+    if (!supabase) return 0;
+    try {
+        const { count, error } = await filterFn(
+            supabase.from(table).select("*", { count: "exact", head: true })
+        );
+        if (error) return 0;
+        return count || 0;
+    } catch {
+        return 0;
+    }
 }
 
 export async function getDashboard(req, res, next) {
     try {
-        const [items, claims, matches, rewards] = await Promise.all([
+        if (!supabase) throw new Error("Supabase is not configured");
+
+        const [items, claims, matches, rewards, users] = await Promise.all([
             countRows("items"),
             countRows("claims"),
             countRows("matches"),
-            countRows("rewards")
+            countRows("rewards"),
+            countRows("profiles"),
         ]);
+
+        const [pendingClaims, pendingMatches] = await Promise.all([
+            countRows("claims", (q) => q.eq("status", "pending")),
+            countRows("matches", (q) => q.eq("status", "pending")),
+        ]);
+
+        // Recent items
+        const { data: recentItems } = await supabase
+            .from("items")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(6);
 
         res.json({
             success: true,
-            data: { items, claims, matches, rewards }
+            data: {
+                totalReports: items,
+                pendingClaims,
+                pendingMatches,
+                totalUsers: users,
+                totalRewards: rewards,
+                recentItems: recentItems || [],
+            },
         });
     } catch (error) {
         next(error);

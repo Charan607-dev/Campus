@@ -1,35 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginAdmin } from "../services/auth";
-import { ShieldCheck, Eye, EyeOff, LockKeyhole } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, LockKeyhole, LoaderCircle } from "lucide-react";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
 
         if (!email.trim() || !password) {
-            setError("Enter your email and password.");
+            setError("Enter your administrator email and password.");
             return;
         }
 
-        // Temporary demo login. Replace with backend authentication.
-        if (
-            email.trim().toLowerCase() === "admin@campusfind.com" &&
-            password === "Admin@123"
-        ) {
-            localStorage.setItem("campusfind_admin", "demo-admin");
-            navigate("/");
-            return;
+        setLoading(true);
+        try {
+            await loginAdmin({ email: email.trim(), password });
+            navigate("/", { replace: true });
+        } catch (err) {
+            setError(err.message || "Invalid administrator credentials or access denied.");
+        } finally {
+            setLoading(false);
         }
-
-        setError("Invalid demo credentials.");
     }
 
     return (
@@ -48,10 +47,11 @@ export default function Login() {
                         id="admin-email"
                         type="email"
                         autoComplete="username"
-                        placeholder="admin@campusfind.com"
+                        placeholder="admin@campus.edu"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         required
+                        disabled={loading}
                     />
 
                     <label htmlFor="admin-password">Password</label>
@@ -65,6 +65,7 @@ export default function Login() {
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
                             required
+                            disabled={loading}
                         />
                         <button
                             type="button"
@@ -75,18 +76,24 @@ export default function Login() {
                         </button>
                     </div>
 
-                    {error && <p className="admin-login-error">{error}</p>}
+                    {error && <p className="admin-login-error" role="alert">{error}</p>}
 
-                    <button className="admin-login-submit" type="submit">
-                        Sign in to dashboard
+                    <button className="admin-login-submit" type="submit" disabled={loading}>
+                        {loading ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                                <LoaderCircle className="loader-spinner" size={16} /> Authenticating...
+                            </span>
+                        ) : (
+                            "Sign in to dashboard"
+                        )}
                     </button>
                 </form>
 
                 <div className="login-demo-note">
-                    <strong>Temporary demo access</strong>
-                    <span>Email: admin@campusfind.com</span>
-                    <span>Password: Admin@123</span>
-                    <p>Replace this demo login with secure backend authentication before deployment.</p>
+                    <strong>Administrator Account Setup</strong>
+                    <p>
+                        Administrator accounts are authenticated securely through Supabase Auth with an <code>admin</code> role assigned in the <code>profiles</code> table or in user <code>app_metadata</code>.
+                    </p>
                 </div>
             </section>
         </main>

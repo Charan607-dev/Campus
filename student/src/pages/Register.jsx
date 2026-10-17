@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { UserRoundPlus } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserRoundPlus, CheckCircle2, LoaderCircle } from "lucide-react";
+import { registerStudent } from "../services/auth";
 
 export default function Register() {
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -13,6 +15,8 @@ export default function Register() {
     });
 
     const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+    const [loading, setLoading] = useState(false);
 
     function updateField(event) {
         setForm((previous) => ({
@@ -21,9 +25,10 @@ export default function Register() {
         }));
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
+        setSuccessMessage("");
 
         if (form.password.length < 8) {
             setError("Password must contain at least 8 characters.");
@@ -35,9 +40,30 @@ export default function Register() {
             return;
         }
 
-        setError(
-            "Registration is not connected yet. Account creation will be enabled after backend integration."
-        );
+        setLoading(true);
+        try {
+            const data = await registerStudent({
+                email: form.email.trim(),
+                password: form.password,
+                name: form.name.trim(),
+                college: form.college.trim(),
+                studentId: form.studentId.trim(),
+            });
+
+            // If email confirmation is required by Supabase settings:
+            if (data.session) {
+                setSuccessMessage("Account created successfully! Redirecting...");
+                setTimeout(() => navigate("/"), 1200);
+            } else {
+                setSuccessMessage(
+                    "Registration successful! Please check your email to confirm your account, then log in."
+                );
+            }
+        } catch (err) {
+            setError(err.message || "Failed to create account. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -51,6 +77,11 @@ export default function Register() {
                     </p>
 
                     {error && <p className="form-error" role="alert">{error}</p>}
+                    {successMessage && (
+                        <p className="form-success" role="status">
+                            <CheckCircle2 size={16} /> {successMessage}
+                        </p>
+                    )}
 
                     <div className="form-group">
                         <label htmlFor="name">Full name</label>
@@ -62,6 +93,7 @@ export default function Register() {
                             value={form.name}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -76,6 +108,7 @@ export default function Register() {
                             value={form.email}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -88,6 +121,7 @@ export default function Register() {
                             value={form.college}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -100,6 +134,7 @@ export default function Register() {
                             value={form.studentId}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -115,6 +150,7 @@ export default function Register() {
                             value={form.password}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -129,11 +165,20 @@ export default function Register() {
                             value={form.confirmPassword}
                             onChange={updateField}
                             required
+                            disabled={loading}
                         />
                     </div>
 
-                    <button className="button button-primary button-full" type="submit">
-                        <UserRoundPlus size={17} /> Create account
+                    <button className="button button-primary button-full" type="submit" disabled={loading}>
+                        {loading ? (
+                            <>
+                                <LoaderCircle className="loader-spinner" size={17} /> Creating account...
+                            </>
+                        ) : (
+                            <>
+                                <UserRoundPlus size={17} /> Create account
+                            </>
+                        )}
                     </button>
 
                     <p className="form-bottom">
